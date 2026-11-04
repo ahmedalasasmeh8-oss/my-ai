@@ -1,6 +1,6 @@
 // Service worker: network-first (so updates show up), falls back to cache when offline.
 // API calls (Groq) are cross-origin POSTs and are never touched.
-const CACHE = "my-ai-v1";
+const CACHE = "my-ai-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

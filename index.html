@@ -213,6 +213,33 @@
   .small { padding: 3px 10px; font-size: 13px; }
   .tools { align-self: flex-start; margin-top: -10px; }
   #sys { width: 100%; flex: none; min-height: 110px; max-height: 240px; border-radius: 10px; padding: 9px 12px; font-size: 15px; }
+  .composer form { display: block; }
+  .box { border: 1px solid var(--line); border-radius: 20px; background: var(--bg); padding: 8px 10px; }
+  .box:focus-within { border-color: var(--accent); }
+  .box textarea { width: 100%; border: 0; background: transparent; border-radius: 0; padding: 6px 4px; min-height: 40px; max-height: 160px; }
+  .box textarea:focus-visible { outline: none; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+  .row .send { min-height: 40px; padding: 0 22px; border-radius: 12px; }
+  .tools-l { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .icon { width: 40px; height: 40px; border-radius: 12px; border: 1px solid transparent; background: transparent; display: grid; place-items: center; color: var(--muted); }
+  .icon:hover { background: var(--surface); }
+  .icon.on { background: var(--accent); color: var(--accent-ink); }
+  .icon:focus-visible, .chip:focus-visible, .sugg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 14px; color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .attach { max-width: 760px; margin: 0 auto 8px; display: flex; align-items: center; gap: 8px; }
+  .attach[hidden] { display: none; }
+  .attach img { height: 52px; border-radius: 8px; }
+  .thumb { display: block; max-width: 100%; max-height: 220px; border-radius: 10px; margin-bottom: 6px; }
+  .fileTag { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .sugg { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+  .sugg button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 14px; font-size: 15px; }
+  .dots { display: inline-flex; gap: 5px; padding: 6px 0; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.1s infinite ease-in-out; }
+  .dots i:nth-child(2) { animation-delay: .15s; }
+  .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .dots i { animation: none; opacity: .6; } }
   @media (prefers-reduced-motion: reduce) { main { scroll-behavior: auto; } }
 </style>
 </head>
@@ -231,10 +258,21 @@
   </main>
 
   <div class="composer">
+    <div id="attach" class="attach" hidden></div>
     <form id="form">
-      <textarea id="input" rows="1" placeholder="اكتب رسالتك" dir="auto"></textarea>
-      <button class="send" id="send" type="submit">إرسال</button>
+      <div class="box">
+        <textarea id="input" rows="1" placeholder="اكتب رسالتك" dir="auto"></textarea>
+        <div class="row">
+          <div class="tools-l">
+            <button class="icon" id="attachBtn" type="button" aria-label="إرفاق صورة أو ملف" title="إرفاق صورة أو ملف"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1l-9.2 9.2a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
+            <button class="icon" id="micBtn" type="button" aria-label="إدخال صوتي" title="إدخال صوتي"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+            <button class="chip" id="searchBtn" type="button" aria-pressed="false">بحث بالإنترنت</button>
+          </div>
+          <button class="send" id="send" type="submit">إرسال</button>
+        </div>
+      </div>
     </form>
+    <input type="file" id="file" hidden accept="image/*,.txt,.md,.csv,.json,.py,.js,.html,.css,.xml,.log">
   </div>
 
   <dialog id="chatsDlg">
@@ -254,6 +292,13 @@
     <select id="model">
       <option value="openai/gpt-oss-120b">GPT-OSS 120B (الأقوى والأذكى)</option>
       <option value="openai/gpt-oss-20b">GPT-OSS 20B (أسرع)</option>
+    </select>
+    <label for="vlang">لغة الإدخال الصوتي</label>
+    <select id="vlang">
+      <option value="ar-JO">عربي (الأردن)</option>
+      <option value="ar-SA">عربي (السعودية)</option>
+      <option value="ar-EG">عربي (مصر)</option>
+      <option value="en-US">English</option>
     </select>
     <label for="sys">تعليمات النموذج (System Prompt)</label>
     <textarea id="sys" rows="5" dir="auto"></textarea>
@@ -283,6 +328,9 @@
     return MODELS.indexOf(m) > -1 ? m : MODELS[0];
   }
 
+  const VISION = "qwen/qwen3.6-27b";
+  const SEARCH_MODEL = "groq/compound-mini";
+  let pending = null, searchOn = false;
   const DEFAULT_SYS = "أنت مساعد ذكي. أجب بنفس لغة المستخدم وبشكل واضح ومختصر. إذا لم تكن متأكداً من معلومة (أسماء، تواريخ، أرقام، مصادر، روابط)، قل بصراحة إنك غير متأكد ولا تخترع شيئاً. لا تذكر كتباً أو أبحاثاً أو روابط إلا إذا كنت متأكداً أنها موجودة. إذا طُلب منك مراجعة إجابتك، لا تختلق أخطاء؛ إذا لم تجد خطأ حقيقياً قل ذلك.";
   function curSys() { const v = store.get("sys", ""); return v.trim() ? v : DEFAULT_SYS; }
 
@@ -387,10 +435,16 @@
     el.after(bar);
   }
 
-  function addBubble(role, text) {
+  function addBubble(role, text, m) {
     const el = document.createElement("div");
     el.className = "msg " + role;
-    if (role === "user") { el.dir = "auto"; el.textContent = text; }
+    if (role === "user") {
+      el.dir = "auto";
+      if (m && m.img) { const im = document.createElement("img"); im.src = m.img; im.className = "thumb"; im.alt = ""; el.appendChild(im); }
+      else if (m && m.imgName) { const t = document.createElement("div"); t.className = "fileTag"; t.textContent = "صورة: " + m.imgName; el.appendChild(t); }
+      if (m && m.file) { const t = document.createElement("div"); t.className = "fileTag"; t.textContent = "ملف: " + m.file.name; el.appendChild(t); }
+      const tx = document.createElement("div"); tx.textContent = text; el.appendChild(tx);
+    }
     else setHTML(el, render(text));
     thread.appendChild(el);
     return el;
@@ -404,13 +458,24 @@
         ? "<strong>كيف بقدر ساعدك؟</strong>اكتب أول رسالة بالأسفل."
         : "<strong>أهلاً</strong>أضف مفتاح Groq API من الإعدادات لتبدأ.";
       thread.appendChild(e);
+      if (store.get("key", "")) {
+        const box = document.createElement("div");
+        box.className = "sugg";
+        ["اشرحلي شي بشكل بسيط", "ساعدني أكتب رسالة", "اعطيني أفكار لمشروع", "لخّصلي نص"].forEach((t) => {
+          const b = document.createElement("button");
+          b.type = "button"; b.textContent = t;
+          b.addEventListener("click", () => { input.value = t + ": "; autosize(); input.focus(); });
+          box.appendChild(b);
+        });
+        e.appendChild(box);
+      }
       return;
     }
-    messages.forEach((m) => { const el = addBubble(m.role, m.content); if (m.role === "assistant") addCopy(el, m.content); });
+    messages.forEach((m) => { const el = addBubble(m.role, m.content, m); if (m.role === "assistant") addCopy(el, m.content); });
     toBottom();
   }
   function toBottom() { scroller.scrollTop = scroller.scrollHeight; }
-  function persist() { store.set("chats", JSON.stringify(chats)); store.set("cur", cur || ""); }
+  function persist() { store.set("chats", JSON.stringify(chats, (k, v) => (k === "img" ? undefined : v))); store.set("cur", cur || ""); }
   function save() { const c = curChat(); if (c) c.updated = Date.now(); persist(); }
 
   function setBusy(v) {
@@ -419,21 +484,33 @@
   }
 
   async function send() {
-    const text = input.value.trim();
+    let text = input.value.trim();
     const key = store.get("key", "");
-    if (!text) return;
+    if (!text && !pending) return;
     if (!key) { settings.showModal(); return; }
+    if (!text) text = pending.kind === "img" ? "شو في بهالصورة؟" : "لخّص هالملف.";
 
     if (!messages.length) thread.innerHTML = "";
-    messages.push({ role: "user", content: text });
-    addBubble("user", text);
-    input.value = ""; autosize();
+    const um = { role: "user", content: text };
+    if (pending) {
+      if (pending.kind === "img") { um.img = pending.dataUrl; um.imgName = pending.name; }
+      else um.file = { name: pending.name, text: pending.text };
+    }
+    messages.push(um);
+    addBubble("user", text, um);
+    input.value = ""; autosize(); setPending(null);
 
-    const out = addBubble("assistant", "…");
+    const out = addBubble("assistant", "");
+    out.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>';
     toBottom();
     setBusy(true);
     controller = new AbortController();
     let reply = "";
+    const slice = messages.slice(-30);
+    let model = curModel();
+    if (slice.some((m) => m.img)) model = VISION;
+    else if (searchOn) model = SEARCH_MODEL;
+    const useStream = model.indexOf("groq/compound") !== 0;
 
     try {
       const res = await fetch(API_URL, {
@@ -444,11 +521,9 @@
           "Authorization": "Bearer " + key
         },
         body: JSON.stringify({
-          model: curModel(),
-          stream: true,
-          messages: [{ role: "system", content: curSys() }].concat(
-            messages.slice(-30).map((m) => ({ role: m.role, content: m.content }))
-          )
+          model: model,
+          stream: useStream,
+          messages: [{ role: "system", content: curSys() }].concat(slice.map(toApi))
         })
       });
 
@@ -456,6 +531,7 @@
         let msg = "خطأ " + res.status;
         const hints = {
           401: "المفتاح غير صحيح أو منتهي، تأكد منه من الإعدادات.",
+          400: "الطلب مرفوض، غالباً النموذج ما بيدعم هاد النوع من الإدخال.",
           404: "اسم النموذج غير متاح، جرّب نموذج تاني من الإعدادات.",
           429: "وصلت للحد المجاني، انتظر شوي وجرّب مرة تانية."
         };
@@ -464,10 +540,16 @@
         throw new Error(msg + hint);
       }
 
-      const reader = res.body.getReader();
+      if (!useStream) {
+        const j = await res.json();
+        reply = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+        setHTML(out, render(reply));
+        toBottom();
+      }
+      const reader = useStream ? res.body.getReader() : null;
       const dec = new TextDecoder();
       let buf = "";
-      while (true) {
+      while (reader) {
         const { done, value } = await reader.read();
         if (done) break;
         buf += dec.decode(value, { stream: true });
@@ -584,6 +666,7 @@
     $("key").value = store.get("key", "");
     $("model").value = curModel();
     $("sys").value = curSys();
+    $("vlang").value = store.get("vlang", "ar-JO");
     settings.showModal();
   });
   $("closeSettings").addEventListener("click", () => settings.close());
@@ -592,9 +675,98 @@
     store.set("key", $("key").value.trim());
     store.set("model", $("model").value);
     store.set("sys", $("sys").value.trim());
+    store.set("vlang", $("vlang").value);
     settings.close();
     if (!messages.length) renderAll();
   });
+
+  // ---- attachments (image / text file) ----
+  function toApi(m) {
+    if (m.role !== "user") return { role: m.role, content: m.content };
+    let t = m.content;
+    if (m.file) t = "[ملف: " + m.file.name + "]\n" + m.file.text + "\n\n" + t;
+    if (m.img) return { role: "user", content: [{ type: "text", text: t }, { type: "image_url", image_url: { url: m.img } }] };
+    return { role: "user", content: t };
+  }
+  function shrink(f) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(f);
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 1280 / Math.max(im.width, im.height));
+        const w = Math.round(im.width * k), h = Math.round(im.height * k);
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(im, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      im.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+      im.src = url;
+    });
+  }
+  function setPending(p) {
+    pending = p;
+    const box = $("attach");
+    box.innerHTML = "";
+    if (!p) { box.hidden = true; return; }
+    box.hidden = false;
+    if (p.kind === "img") { const im = document.createElement("img"); im.src = p.dataUrl; im.alt = ""; box.appendChild(im); }
+    const n = document.createElement("span");
+    n.className = "fileTag"; n.textContent = (p.kind === "img" ? "صورة: " : "ملف: ") + p.name;
+    box.appendChild(n);
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "ghost small"; x.textContent = "إزالة";
+    x.addEventListener("click", () => setPending(null));
+    box.appendChild(x);
+  }
+  async function handleFile(f) {
+    if (!f) return;
+    if (f.type.indexOf("image/") === 0) {
+      try { setPending({ kind: "img", name: f.name, dataUrl: await shrink(f) }); }
+      catch (e) { alert("تعذّر قراءة الصورة."); }
+      return;
+    }
+    if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar)$/i.test(f.name)) { alert("هالنوع من الملفات مش مدعوم لسا. المدعوم: صور وملفات نصية (txt, md, csv, json, كود)."); return; }
+    if (f.size > 2 * 1024 * 1024) { alert("الملف كبير، الحد 2 ميغا."); return; }
+    try {
+      let t = await f.text();
+      if (t.length > 30000) t = t.slice(0, 30000) + "\n...(انقطع النص لأنه طويل)";
+      setPending({ kind: "file", name: f.name, text: t });
+    } catch (e) { alert("تعذّر قراءة الملف."); }
+  }
+  $("attachBtn").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; handleFile(f); });
+  $("searchBtn").addEventListener("click", (e) => {
+    searchOn = !searchOn;
+    e.currentTarget.setAttribute("aria-pressed", searchOn ? "true" : "false");
+  });
+
+  // ---- voice input (browser speech recognition) ----
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false, baseText = "";
+  function toggleMic() {
+    if (!SR) { alert("المتصفح ما بيدعم الإدخال الصوتي. جرّب Chrome."); return; }
+    if (listening && rec) { rec.stop(); return; }
+    rec = new SR();
+    rec.lang = store.get("vlang", "ar-JO");
+    rec.interimResults = true;
+    rec.continuous = true;
+    baseText = input.value ? input.value + " " : "";
+    rec.onresult = (e) => {
+      let t = "";
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      input.value = baseText + t;
+      autosize();
+    };
+    rec.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") alert("اسمح للمتصفح باستخدام المايكروفون.");
+      else if (e.error === "network") alert("الإدخال الصوتي بحاجة إنترنت.");
+    };
+    rec.onend = () => { listening = false; $("micBtn").classList.remove("on"); };
+    try { rec.start(); listening = true; $("micBtn").classList.add("on"); } catch (e) {}
+  }
+  $("micBtn").addEventListener("click", toggleMic);
 
   renderAll();
 
